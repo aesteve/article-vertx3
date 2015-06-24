@@ -1,11 +1,11 @@
 Bonjour à tous,
 
-Ce 22 juin 2015, la version 3 de [Vert.x](http://vertx.io) a vu le jour. L'occasion pour moi de vous présenter cette boîte à outils pour la Java Virtual Machine.
+Ce 22 juin 2015, la version 3 de [Vert.x](http://vertx.io) a vu le jour. L'occasion pour moi de vous présenter cette boîte à outils pour la Machine Virtuelle Java (JVM).
 
 
 # Qu'est-ce-que Vert.x, en quelques mots ?
 
-Il s'agit d'une boîte à outils polyglote pour construire des applications réseau (web, par extension) asynchrones pour la JVM. Si vous connaissez [Node.js](https://nodejs.org/), ces mots devraient vous être relativement familiers. Et d'ailleurs pour l'anecdote, la première version de Vert.x s'appelait Node.X... Rien d'innocent là-dedans.
+Il s'agit d'une boîte à outils polyglote pour construire des applications distribuées (web mais pas seulement) asynchrones pour la JVM. Si vous connaissez [Node.js](https://nodejs.org/), ces mots devraient vous être relativement familiers. Et d'ailleurs pour l'anecdote, la première version de Vert.x s'appelait _Node.X_... Rien d'innocent là-dedans.
 
 Le [cœur de Vert.x](https://github.com/eclipse/vert.x) est développé sous la coupe de la fondation Eclipse, [les projets "satellites"](https://github.com/vert-x3) (extensions, support de différents langages, clients asynchrones pour différents SGBD, ...) sont des projets 100% communautaires. L'ensemble est disponible sous [licence Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0). 
 
@@ -58,7 +58,7 @@ En premier lieu, il n'y a pas besoin d'énormément de code pour préparer un se
 
 Ensuite, on remarquera la cohérence de l'API dans les différents langages. L'équipe de Vert.x a choisi de conserver une API très semblable (qu'elle qualifie "d'idiomatique") dans les différents langages pour lesquels elle est disponible. Ainsi on retrouve un objet `vertx`, et les méthodes `createHttpServer`, `requestHandler` et `listen`. 
 
-Si on regarde dans le détail la méthode qui décrit comment le serveur doit répondre aux requêtes HTTP, on se rend compte qu'elle prend cependant plusieurs formes différentes :
+Si on regarde plus en détails la méthode répondant aux requêtes HTTP, on se rend compte qu'elle prend plusieurs formes:
 
 * une lambda expression en Java 8
 * une fonction anonyme en Javascript
@@ -67,14 +67,13 @@ Si on regarde dans le détail la méthode qui décrit comment le serveur doit r�
 
 Ce sont les moyens d'expression d'une [fermeture](https://fr.wikipedia.org/wiki/Fermeture_(informatique)) (ou clôture, en Angais *closure*) dans ces trois langages. C'est vraiment le souhait de l'équipe de développement de Vert.x. Exporter, dans chaque langage supporté, les mêmes primitives à l'aide des possibilités offertes par le langage. Nous reviendrons sur le "comment" un peu plus tard dans cet article.
 
-
 Revenons sur ce qui donne à Vert.x sa particularité en parcourant la description présente dans la [documentation officielle](http://vertx.io/docs/).
 
 ## Vert.x est *reactive* (réactif)
 
 Le paradigme de programmation choisi pour l'API de Vert.x est *event-driven* et *non-blocking*. Qu'est-ce-que cela signifie en pratique ?
 
-En gros ça veut dire "ne m'appelez pas, c'est moi qui vous appellerai". On écrit son code de façon descriptive, en expliquant ce qu'il faut faire, et dans quel cas le faire. Ce que l'on écrit, ce sont des "réactions" à des *stimuli* (*event-driven*). On n'appelle pas de primitives directement (ou très rarement), mais on écrit plutôt : 
+En gros un seul credo: "ne m'appelez pas, c'est moi qui vous appellerai". On écrit son code de façon descriptive, en expliquant ce qu'il faut faire, et dans quel cas le faire. Ce que l'on écrit, ce sont des "réactions" à des *stimuli* (*event-driven*). On n'appelle pas de primitives directement (ou très rarement), mais on écrit plutôt : 
 
 > Quand une requête te parvient, voici comment la traiter.
 
@@ -83,7 +82,7 @@ Encore une fois, ce n'est pas nouveau dans le monde de ces technologies asynchro
 [[question]]
 | Pourquoi cette approche ? Et sous le capot, comment ça fonctionne ?
 
-En réalité, le constat de base de tous ces nouveaux outils de développement d'applications asynchrones ([Node.js](https://nodejs.org/), [undertow](http://undertow.io/), [akka](http://akka.io/), [Tornado](http://www.tornadoweb.org/), ...) partent d'un même constat : une application fonctionnant sur le réseau passe son temps à attendre. Mais à attendre quoi, au juste ? A vrai dire, tout plein de choses. Un cas que l'on retrouve fréquemment dans une application web par exemple, est d'interroger une base de données, parfois localisée sur la même machine, parfois sur un point distant du réseau. Dans ce cas, le schéma d'éxécution est le suivant : 
+En réalité, le constat de base de tous ces nouveaux outils de développement d'applications asynchrones ([Node.js](https://nodejs.org/), [undertow](http://undertow.io/), [akka](http://akka.io/), [Tornado](http://www.tornadoweb.org/), ...) partent d'un même constat : une application fonctionnant sur le réseau passe son temps à attendre. Mais à attendre quoi, au juste ? A vrai dire, tout plein de choses. Un cas que l'on retrouve fréquemment dans une application web par exemple, est le requêtage d'une base de données, parfois localisée sur la même machine, parfois sur un point distant du réseau. Dans ce cas, le schéma d'éxécution est le suivant : 
 
 * l'utilisateur fait une requête au serveur
 * le serveur web reçoit la requête, en extrait les informations qui l'intéressent (paramètres, en-têtes, ...)
@@ -94,7 +93,7 @@ En réalité, le constat de base de tous ces nouveaux outils de développement d
 
 On voit donc, que du côté du serveur web, il y a une durée non-négligeable, et surtout non maîtrisable passée à attendre une réponse (dans l'exemple : du système de stockage, mais cela pourrait être des I/O du système, ou encore tout plein d'autres choses). 
 
-Or, les serveurs web classiques ("historiques" dirons-nous) et surtout les frameworks associés (Java EE en tête) fonctionnent de la façon suivante : lorsqu'une requête parvient au serveur, le serveur alloue un *thread* à son traitement. Une fois la réponse envoyée au client, le *thread* est désalloué.
+Or, les serveurs web classiques ("historiques" dirons-nous) et surtout les frameworks associés (JavaEE en tête) fonctionnent de la façon suivante : lorsqu'une requête parvient au serveur, le serveur alloue un *thread* à son traitement. Une fois la réponse envoyée au client, le *thread* est désalloué.
 
 Et du coup, on a alloué un *thread* à... 
 
@@ -182,6 +181,8 @@ Réponse simple : on leur colle un serveur web à chacun ? Mmm, oui mais non...
 En réalité, Vert.x propose un [distributeur de message](https://en.wikipedia.org/wiki/Message_broker) (ou *Message Broker*, ou *Event Bus* en Anglais dans le texte) dont le rôle, vous l'aurez deviné, est de distribuer des messages, des réponses, etc. à tout notre petit monde, un facteur, en gros. 
 
 Peu importe que vos services fonctionnent sur la même machine ou sur deux nœuds distincts du réseau. C'est le problème de Vert.x, pas le votre. Vous disposez d'une API pour envoyer et recevoir des messages, Vert.x s'occupe de les distribuer. Il s'agit d'une implémentation du patron de conception [publish / subscribe](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern) pour les plus curieux.
+
+Ceux ayant déjà implémenté ce genre de système doivent ce dire: "ca va être la foire". Or justement, Vert.x 3 propose une [fonctionnalité](https://github.com/vert-x3/vertx-service-proxy) afin de masquer ces messages, et invoquer des _services_ distants sans ce soucier des messages a envoyer et recevoir.
 
 
 [[secret]]
